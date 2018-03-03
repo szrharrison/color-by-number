@@ -1,0 +1,28 @@
+{
+  "name": "color-by-number",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "ajv": "^6.1.1",
+    "pixi.js": "^4.7.0",
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0",
+    "react-redux": "^5.0.7",
+    "react-scripts": "1.1.1",
+    "redux": "^3.7.2",
+    "redux-thunk": "^2.2.0",
+    "semantic-ui-css": "^2.3.0",
+    "semantic-ui-react": "^0.78.2",
+    "lodash": "latest"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "react-app-rewire-eslint": "^0.2.3",
+    "react-app-rewired": "^1.4.1"
+  }
+}
