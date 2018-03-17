@@ -10,15 +10,28 @@ const addImageName = (image, action) => ({
   name: action.name
 });
 
-const addPixel = (image, action) => ({
+const addPixelInfo = (image, action) => ({
   ...image,
-  pixels: [...image.pixels, action.pixel]
+  imageXs: action.x,
+  imageYs: action.y,
+  imageRs: action.r,
+  imageGs: action.g,
+  imageBs: action.b,
+  imageAs: action.a,
+
+  imageFills: new Uint8Array(action.x.length).fill(0)
+});
+
+const addColors = (image, action) => ({
+  ...image,
+  colors: action.colors
 });
 
 const imageReducer = createReducer({}, {
   ADD_IMAGE_DATA_URL: addImageDataUrl,
   ADD_IMAGE_NAME:     addImageName,
-  ADD_PIXEL:          addPixel
+  ADD_PIXEL_INFO:     addPixelInfo,
+  ADD_COLORS:         addColors
 });
 
 export default imageReducer;

@@ -1,8 +1,8 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
 import RGBA from "../services/rgba";
-import Pixel from "../services/pixel";
-import addPixel from "../services/events/add_other_pixel";
+import addPixelInfo from "../services/events/add_pixel_info";
+import addColors from "../services/events/add_colors";
 
 class UnconnectedViewer extends Component {
   componentDidMount() {
@@ -23,22 +23,27 @@ class UnconnectedViewer extends Component {
       this.height = (window.innerHeight - 40);
 
       this.image.onload = () => {
-        let scaleWidth = this.image.height <= this.image.width;
+        // let scaleDown = this.width < this.image.width || this.height < this.image.height;
+        const landscape = this.image.height <= this.image.width;
+
         let widthScale, heightScale;
 
-        if (scaleWidth) {
+        if (landscape) {
           widthScale  = 1;
           heightScale = this.width / this.image.width;
+          // } else if(!landscape && !scaleDown) {
         } else {
           widthScale  = this.height / this.image.height;
           heightScale = 1;
+          // } else if(landscape) {
+          //   widthScale
         }
 
         const imageWidth  = this.width * widthScale;
         const imageHeight = this.height * heightScale;
 
-        this.ctx.drawImage(this.image, 40 + this.width, 0, imageWidth, imageHeight);
-        this.imageData = this.ctx.getImageData(40 + this.width, 0, imageWidth, imageHeight);
+        this.imageData = draw(this.ctx, this.image, 40 + this.width, 0);
+
 
         this.scale = this.imageData.height / this.image.height;
         console.log("scale:", this.scale, "adjustedHeight:", this.imageData.height, "actualHeight:", this.image.height);
@@ -46,23 +51,49 @@ class UnconnectedViewer extends Component {
 
         const data          = this.imageData.data;
         const l             = data.length;
-        const pixelWidth    = scaleWidth ?
+        const pixelWidth    = landscape ?
           Math.floor(this.width / this.imageData.width) :
           Math.floor(this.height / this.imageData.height);
         const pixelRowWidth = this.imageData.width * 4;
 
+        const pixelXs = new Uint16Array(l / 4);
+        const pixelYs = new Uint16Array(l / 4);
+        const pixelRs = new Uint8ClampedArray(l / 4);
+        const pixelGs = new Uint8ClampedArray(l / 4);
+        const pixelBs = new Uint8ClampedArray(l / 4);
+        const pixelAs = new Uint8ClampedArray(l / 4);
+
+        const colors = [data[0], data[1], data[2], data[3]];
+
         for (let i = 0; i < l; i += 4) {
           const color        = new RGBA(data[i], data[i + 1], data[i + 2], data[i + 3]);
           this.ctx.fillStyle = color.toString();
+          const len = colors.length;
+          let exists = false;
+          for ()
+          if (colors.findIndex((datum, index) => datum === color.r && index % 4 === 0 && colors[index + 1] === data[i + 1] && colors[index + 2] === data[i + 2] && colors[index + 3] === data[i + 3]) === -1) {
+            colors[colors.length] = color.r;
+            colors[colors.length] = color.g;
+            colors[colors.length] = color.b;
+            colors[colors.length] = color.a;
+          }
+          pixelRs[i / 4] = color.r;
+          pixelGs[i / 4] = color.g;
+          pixelBs[i / 4] = color.b;
+          pixelAs[i / 4] = color.a;
 
           const pixelX = pixelWidth * ((i % pixelRowWidth) / 4);
           const pixelY = pixelWidth * Math.floor(i / pixelRowWidth);
 
-          const pixel = new Pixel(color, pixelX, pixelY);
-          console.log(this.props);
-          this.props.addPixel(pixel);
+          pixelXs[i / 4] = pixelX;
+          pixelYs[i / 4] = pixelY;
+
           this.ctx.fillRect(pixelX, pixelY, pixelWidth, pixelWidth);
         }
+        this.props.addPixelInfo(pixelXs, pixelYs, pixelRs, pixelGs, pixelBs, pixelAs);
+        const colorsBuffer = new Uint16Array(colors);
+        this.props.addColors(colorsBuffer);
+        console.log(colorsBuffer);
       };
     }
   }
@@ -114,5 +145,15 @@ const mapStateToProps = (state) => ({
   source: state.image.dataUrl
 });
 
-const Viewer = connect(mapStateToProps, { addPixel })(UnconnectedViewer);
+const Viewer = connect(mapStateToProps, { addPixelInfo, addColors })(UnconnectedViewer);
 export default Viewer;
+
+
+function draw(ctx, img, x, y) {
+  ctx.drawImage(img, x, y);
+  return getImageData(ctx, x, y, img);
+}
+
+function getImageData(ctx, x, y, img) {
+  return ctx.getImageData(x, y, img.width, img.height);
+}
