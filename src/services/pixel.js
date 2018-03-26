@@ -1,20 +1,27 @@
+let id = 0;
+
 function Pixel(color, x, y) {
-  // if (Object.getPrototypeOf(color) !== "RGBA") {
-  // }
   Object.defineProperties(this, {
     color: {
-      value:      color,
+      value: color,
       enumerable: true
     },
-    x:     {
-      value:      x,
+    x: {
+      value: x,
       enumerable: true
     },
-    y:     {
-      value:      y,
+    y: {
+      value: y,
+      enumerable: true
+    },
+    id: {
+      value: id,
       enumerable: true
     }
   });
+  id++;
+  this.filled = false;
+  this.colorNum = 0;
 }
 
 // Object.defineProperties(Pixel.prototype, {
@@ -25,4 +32,8 @@ function Pixel(color, x, y) {
 //   }
 // });
 
+Pixel.prototype.fill = function () {
+  this.filled = true;
+  return this;
+};
 export default Pixel;

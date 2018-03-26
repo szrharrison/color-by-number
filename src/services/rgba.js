@@ -1,33 +1,50 @@
-const cache = new Map();
+const colorCache = new Map();
+const colorStrings = new Set();
 
 function RGBA(r, g, b, a) {
-  Object.defineProperties(this, {
-    r: { value: r || 0 },
-    g: { value: g || 0 },
-    b: { value: b || 0 },
-    a: { value: a || 0 },
-  });
+  a = a === 0 || a ? a : 255;
+  r = r || 0;
+  g = g || 0;
+  b = b || 0;
+  const colorString = `rgba(${r},${g},${b},${a / 255})`;
+  if (colorStrings.has(colorString)) {
+    return colorCache.get(colorString);
+  } else {
+    Object.defineProperties(this, {
+      r: {
+        value: r,
+        enumerable: true,
+      },
+      g: {
+        value: g,
+        enumerable: true,
+      },
+      b: {
+        value: b,
+        enumerable: true,
+      },
+      a: {
+        value: a,
+        enumerable: true,
+      },
+      colorString: { value: colorString }
+    });
+    colorStrings.add(colorString);
+    colorCache.set(colorString, this);
+  }
 }
 
 Object.defineProperties(RGBA.prototype, {
-
-  toString:   {
+  toString: {
     value: function () {
-      if (cache.has(this)) {
-        return cache.get(this);
-      } else {
-        const rgba = "rgba(" + this.r + "," + this.g + "," + this.b + "," + this.a / 255 + ")";
-        cache.set(this, rgba);
-        return rgba;
-      }
+      return this.colorString;
     }
   },
-  toArray:    {
+  toArray: {
     value: function () {
-      return [this.r, this.g, this.b, this.a];
+      return new Uint8ClampedArray([this.r, this.g, this.b, this.a]);
     }
-  }
-  ,
+  },
   addToArray: {
     value: function (array) {
       array[array.length] = this.r;
@@ -35,17 +52,29 @@ Object.defineProperties(RGBA.prototype, {
       array[array.length] = this.b;
       array[array.length] = this.a;
     }
-  }
-  ,
-  toHex:      {
+  },
+  toHex: {
     value: function () {
-      const r   = ("0" + this.r.toString(16)).slice(-2);
-      const g   = ("0" + this.g.toString(16)).slice(-2);
-      const b   = ("0" + this.b.toString(16)).slice(-2);
+      const r = ("0" + this.r.toString(16)).slice(-2);
+      const g = ("0" + this.g.toString(16)).slice(-2);
+      const b = ("0" + this.b.toString(16)).slice(-2);
       const hex = `${r}${g}${b}`;
       return parseInt(hex, 16);
     }
+  },
+  getShading: {
+    value: function () {
+      const r = this.r / 255;
+      const g = this.g / 255;
+      const b = this.b / 255;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+
+      const lightness = (max + min) / 2 * 255;
+      const l = Math.round(lightness/2 + 125);
+      return new RGBA(l, l, l);
+    }
   }
-})
-;
+});
+
 export default RGBA;

@@ -1,24 +1,29 @@
 import createReducer from "../create_reducer";
+import imageStore from "../image_store";
 
-const addImageDataUrl = (image, action) => ({
-  ...image,
-  dataUrl: action.dataUrl
-});
+const addImageDataUrl = (image, action) => {
+  imageStore.imageDataUrl = action.dataUrl;
+
+  return {
+    ...image,
+    dataUrl: action.dataUrl
+  };
+};
 
 const addImageName = (image, action) => ({
   ...image,
   name: action.name
 });
 
-const addPixel = (image, action) => ({
+const colorPixel = (image, action) => ({
   ...image,
-  pixels: [...image.pixels, action.pixel]
+  colorOrder: [...image.colorOrder, action.id]
 });
 
-const imageReducer = createReducer({}, {
+const imageReducer = createReducer({ colorOrder: [] }, {
   ADD_IMAGE_DATA_URL: addImageDataUrl,
-  ADD_IMAGE_NAME:     addImageName,
-  ADD_PIXEL:          addPixel
+  ADD_IMAGE_NAME: addImageName,
+  COLOR_PIXEL: colorPixel
 });
 
 export default imageReducer;
