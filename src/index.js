@@ -1,11 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import "./index.css";
-import App from "./App";
-import registerServiceWorker from "./registerServiceWorker";
+import "./css/main.css";
+import App from "./js/App";
+import registerServiceWorker from "./js/registerServiceWorker";
 import { Provider } from "react-redux";
 import { applyMiddleware, createStore } from "redux";
-import rootReducer from "./services/reducers/root_reducer";
+import rootReducer from "./js/services/reducers/root_reducer";
 import thunk from "redux-thunk";
 
 const store = createStore(rootReducer, applyMiddleware(thunk));

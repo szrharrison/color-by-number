@@ -1,0 +1,11 @@
+@import "color_picker.css";
+@import "index.css";
+@import "options_menu.css";
+
+.ui.horizontal.segments > .segment.inverted {
+    background-color: #1b1c1d;
+}
+
+.ui.secondary.menu.fixed .item {
+    border-radius: 0;
+}
