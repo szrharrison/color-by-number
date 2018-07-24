@@ -1,8 +1,3 @@
-.ColorPicker {
-    overflow-y: scroll;
-    pointer-events: none;
-}
-
 .ColorPicker-Color {
     border: 1px solid black;
 }
@@ -16,11 +11,11 @@
     -moz-background-clip: text;
 }
 
-.ui.inverted.menu .active.item.ColorPicker-Color.selected {
+.ui.inverted.menu .ColorPicker-Color.selected {
     box-shadow: inset 0 0 16px black;
 }
 
-.ui.vertical.menu .ColorPicker-Color.item > i.icon {
+.ui.vertical.menu .ColorPicker-Color > i.icon {
     background-color: inherit;
     color: transparent;
     filter: invert(1) grayscale(1) contrast(100%);

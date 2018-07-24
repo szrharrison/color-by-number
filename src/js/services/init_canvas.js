@@ -31,6 +31,7 @@ Object.defineProperty(Matrix, "identity", {
   ])
 });
 
+// noinspection JSUnusedGlobalSymbols
 Matrix.prototype.multiply = function (matrix) {
   if (Array.isArray(matrix)) {
     matrix = new Matrix(matrix);
@@ -70,7 +71,7 @@ Matrix.prototype.invert = function () {
   // Put an identity matrix to the right of matrix
   for (let i = 0; i < rowLen; i++) {
     for (let j = rowLen; j < 2 * Matrix.colLen; j++) {
-      if (i === (j - rowLen)) {
+      if (i === j - rowLen) {
         values[i][j] = 1;
       }
       else {
@@ -143,18 +144,6 @@ SvgMatrixSub.prototype.setTransformFromArray = function (a, b, c, d, e, f) {
   values[1][2] = f;
 };
 
-SvgMatrixSub.prototype.getTransformAsArray = function () {
-  const values = this.matrix._values;
-  return [
-    values[0][0],
-    values[1][0],
-    values[0][1],
-    values[1][1],
-    values[0][2],
-    values[1][2]
-  ];
-};
-
 SvgMatrixSub.prototype.translate = function (tx, ty) {
   return this._multiply([[1, 0, tx], [0, 1, ty], [0, 0, 1]]);
 };
@@ -178,7 +167,6 @@ SvgMatrixSub.prototype.inverse = function () {
   return result;
 };
 
-
 /**
  * Offers restricted functionality of SVGMatrix {@url http://www.w3.org/TR/SVG11/coords.html#InterfaceSVGMatrix}
  */
@@ -200,8 +188,100 @@ SvgPointSub.prototype.matrixTransform = function (matrix) {
 };
 
 /**
+ * @name getTransformMatrix
+ * @function
+ * @returns {SvgMatrixSub}
+ * @memberOf CanvasRenderingContext2D#
+ */
+
+/**
+ * @name scale
+ * @function
+ * @param {number} sx
+ * @param {number} sy
+ * @returns {void}
+ * @memberOf CanvasRenderingContext2D#
+ */
+
+/**
+ * @name rotate
+ * @function
+ * @param {number} radians
+ * @returns {void}
+ * @memberOf CanvasRenderingContext2D#
+ */
+
+/**
+ * @name translate
+ * @function
+ * @param {number} dx
+ * @param {number} dy
+ * @returns {void}
+ * @memberOf CanvasRenderingContext2D#
+ */
+
+/**
+ * Multiplies the current transformation with the matrix described by the arguments of this method. You are able to scale, rotate, move and skew the context.
+ * @name transform
+ * @function
+ * @param {number} a (m11) Horizontal scaling.
+ * @param {number} b (m12) Horizontal skewing.
+ * @param {number} c (m21) Vertical skewing.
+ * @param {number} d (m22) Vertical scaling.
+ * @param {number} e (dx) Horizontal moving.
+ * @param {number} f (dy) Vertical moving.
+ * @returns {void}
+ * @memberOf CanvasRenderingContext2D#
+ */
+
+/**
+ * @name setTransform
+ * @function
+ * @param {number} a
+ * @param {number} b
+ * @param {number} c
+ * @param {number} d
+ * @param {number} e
+ * @param {number} f
+ * @memberOf CanvasRenderingContext2D#
+ */
+
+/**
+ * @name transformedPoint
+ * @function
+ * @param {mousePoint} xy
+ * @returns {SvgPointSub}
+ * @memberOf CanvasRenderingContext2D#
+ */
+
+/**
+ * @name clearTransformedRect
+ * @function
+ * @param {number} x
+ * @param {number} y
+ * @param {number} w
+ * @param {number} h
+ * @returns {void}
+ * @memberOf CanvasRenderingContext2D#
+ */
+
+/**
+ * @name clearCanvas
+ * @function
+ * @returns {void}
+ * @memberOf CanvasRenderingContext2D#
+ */
+
+/**
+ * A representation of the mouse's position on the canvas
+ * @typedef {SvgPointSub} mousePoint
+ * @property {?number} x
+ * @property {?number} y
+ */
+
+/**
  * Mixin which enables canvas context to save applied transformations.
- * @param canvasContext canvas.getContext('2d')
+ * @param {CanvasRenderingContext2D} canvasContext canvas.getContext('2d')
  */
 function initCanvas(canvasContext) {
   const svg = new SvgTransformSub();
@@ -210,9 +290,9 @@ function initCanvas(canvasContext) {
   canvasContext.getTransformMatrix = function () {
     return transformMatrix;
   };
-
   const savedTransforms = [];
   const save = canvasContext.save;
+
   canvasContext.save = function () {
     savedTransforms.push(transformMatrix.translate(0, 0));
     return save.call(canvasContext);
@@ -226,19 +306,19 @@ function initCanvas(canvasContext) {
   const scale = canvasContext.scale;
   canvasContext.scale = function (sx, sy) {
     transformMatrix = transformMatrix.scaleNonUniform(sx, sy);
-    return scale.call(canvasContext, sx, sy);
+    scale.call(canvasContext, sx, sy);
   };
 
   const rotate = canvasContext.rotate;
   canvasContext.rotate = function (radians) {
     transformMatrix = transformMatrix.rotate(radians);
-    return rotate.call(canvasContext, radians);
+    rotate.call(canvasContext, radians);
   };
 
   const translate = canvasContext.translate;
   canvasContext.translate = function (dx, dy) {
     transformMatrix = transformMatrix.translate(dx, dy);
-    return translate.call(canvasContext, dx, dy);
+    translate.call(canvasContext, dx, dy);
   };
 
   const transform = canvasContext.transform;
@@ -256,16 +336,15 @@ function initCanvas(canvasContext) {
   };
 
   const pt = svg.createSVGPoint();
-  canvasContext.transformedPoint = function (x, y) {
-    pt.x = x;
-    pt.y = y;
+  canvasContext.transformedPoint = function (xy) {
+    pt.x = xy.x;
+    pt.y = xy.y;
     return pt.matrixTransform(transformMatrix.inverse());
   };
 
-
   canvasContext.clearTransformedRect = function (x, y, w, h) {
-    const p1 = canvasContext.transformedPoint(x, y);
-    const p2 = canvasContext.transformedPoint(x + w, y + h);
+    const p1 = canvasContext.transformedPoint({x, y});
+    const p2 = canvasContext.transformedPoint({x: x + w, y: y + h});
     canvasContext.clearRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
   };
 

@@ -3,7 +3,7 @@ import getStateColor from "./get_state_color";
 
 const getColorInfo = createSelector([
   getStateColor
-],(stateColor) => {
+], stateColor => {
   return stateColor.colors;
 });
 

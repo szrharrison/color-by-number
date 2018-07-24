@@ -1,174 +1,198 @@
 import React, { Component } from "react";
-import PropTypes from "prop-types";
 import { connect } from "react-redux";
+import PropTypes from "prop-types";
+import angleBetween from "../services/angle_between";
 import colorPixel from "../services/actions/color_pixel";
+import colorSelected from "../services/events/color_selected";
 import colorStore from "../services/color_store";
+import controller from "../services/controller";
+import distanceBetween from "../services/distance_between";
+import getEmPixels from "../services/getEmPixels";
 import getSelectedColorNumber from "../services/selectors/get_selected_color_number";
 import imageStore from "../services/image_store";
 import initCanvas from "../services/init_canvas";
+import PixelImage from "../services/models/pixel_image";
+import renderPixelImage from "../services/render_pixel_image";
 import setColors from "../services/events/set_colors";
-import keyMap from "../services/keycode_map";
 
-function renderPixelImage(pixelImage, scale, ctx) {
-  ctx.clearCanvas();
+/**
+ * The last point the mouse event was fired from
+ * @type {mousePoint|SvgPointSub}
+ */
+let lastPoint = { x: 0, y: 0 };
 
-  const pixels = pixelImage.pixels;
-  const l = pixels.length;
-
-  for (let i = 0; i < l; i++) {
-    const pixel = pixels[i];
-    const color = pixel.color;
-    if (pixel.filled) {
-      ctx.fillStyle = color.string;
-    } else {
-      ctx.fillStyle = color.grayscale.string;
-    }
-    ctx.fillRect(pixel.canvasX, pixel.canvasY, scale + 1, scale + 1);
-    if (!pixel.filled) {
-      if (pixel.shade) {
-        ctx.fillStyle = pixel.shade.string;
-        ctx.fillRect(pixel.canvasX, pixel.canvasY, scale, scale);
-      }
-      ctx.strokeStyle = "#000000";
-      ctx.strokeRect(pixel.canvasX, pixel.canvasY, scale, scale);
-      ctx.fillStyle = "#000000";
-      ctx.fillText(
-        color.number,
-        pixel.canvasX + (scale / 2),
-        pixel.canvasY + (scale / 2),
-        scale
-      );
-    }
-  }
-}
-
+/**
+ * @property {CanvasRenderingContext2D} ctx
+ * @property {number} width
+ * @property {number} height
+ * @property {controller} controller
+ */
 class Viewer extends Component {
-  static propTypes = {
-    pixelImage: PropTypes.object,
-    selectedColorNumber: PropTypes.number.isRequired
-  };
-
   static defaultProps = {
+    pixelImage: PixelImage.emptyImage,
     selectedColorNumber: 1
   };
 
+  static propTypes = {
+    pixelImage: PropTypes.object.isRequired,
+    selectedColorNumber: PropTypes.number.isRequired
+  };
+
+  /**
+   * @type {{filledPixels: number, xDiff: ?number, yDiff: ?number, scale: ?number, translateX: number, translateY: number}}
+   */
   state = {
     filledPixels: 0,
-    shadedPixels: 0,
     xDiff: null,
     yDiff: null,
     scale: null,
+    translateX: 0,
+    translateY: 0,
   };
 
-  handleMousedown = (e) => {
-    if (this.props.pixelImage) {
-      this.colorPixel(e);
-      this.refs.canvas.addEventListener("mousemove", this.handleMousemove);
-    }
+  handleMousedown = e => {
+    this.setState({ coloring: true });
+    lastPoint = this.ctx.transformedPoint(this.getPoint(e));
+    this.colorPixel(e);
+    this.refs.canvas.addEventListener("mousemove", this.handleMousemove);
   };
 
   handleMouseup = () => {
-    if (this.props.pixelImage) {
+    this.refs.canvas.removeEventListener("mousemove", this.handleMousemove);
+    this.setState({ coloring: false });
+  };
+
+  handleMouseLeave = () => {
+    this.setState({ coloring: false });
+  };
+
+  handleMouseEnter = e => {
+    if (e.buttons === 1 || e.which === 1) {
+      this.setState({ coloring: true });
+    } else {
       this.refs.canvas.removeEventListener("mousemove", this.handleMousemove);
     }
   };
 
-  handleMousemove = (e) => {
-    if (this.props.pixelImage) {
+  handleMousemove = e => {
+    if (this.state.coloring) {
       this.colorPixel(e);
     }
   };
 
-  handleWheel = (e) => {
-    if (this.props.pixelImage) {
-      const scale = e.deltaY;
-      const scaleChange = 1 - scale / 100;
-      const ctx = this.ctx;
-      const pixelImage = this.props.pixelImage;
+  handleWheel = e => {
+    e.preventDefault();
+    e.stopPropagation();
+    let moveX = Math.round(e.deltaX);
+    // noinspection JSSuspiciousNameCombination
+    let moveY = Math.round(e.deltaY);
 
-      this.setState((prevState) => {
-        const newScale = Math.max(Math.min(prevState.scale * scaleChange, 50), 1);
-        ctx.font = newScale / 2 + "px sans-serif";
-        requestAnimationFrame(() => {
-          pixelImage.setScale(newScale);
-          renderPixelImage(pixelImage, newScale, ctx);
-        });
-        return {
-          scale: newScale
-        };
-      });
+    this.setState(prevState => {
+      const { translateX, translateY } = prevState;
+      this.ctx.translate(moveX, moveY);
+      return {
+        translateX: translateX + moveX,
+        translateY: translateY + moveY
+      };
+    });
+  };
+
+  handleButtons = e => {
+    this.controller(e.keyCode, this.state);
+  };
+
+  handleResize = () => {
+    initCanvas(this.ctx);
+    const rect = this.refs.canvas.getBoundingClientRect();
+    this.width = window.innerWidth - 30 - 15 * getEmPixels();
+    this.height = window.innerHeight - 30;
+
+    this.setState({
+      xDiff: rect.left,
+      yDiff: rect.top,
+    });
+
+    this.resizing = false;
+  };
+
+  optimizedResize = () => {
+    if (!this.resizing) {
+      this.resizing = true;
+      requestAnimationFrame(this.handleResize);
     }
   };
 
-  handleButtons = (e) => {
-    if (this.props.pixelImage) {
-      // eslint-disable-next-line default-case
-      switch (e.keyCode) {
-        case keyMap.byKey.left: // left key pressed
-          this.ctx.translate(this.state.scale, 0);
-          break;
-        case keyMap.byKey.up: // up key pressed
-          this.ctx.translate(0, this.state.scale);
-          break;
-        case keyMap.byKey.right: // right key pressed
-          this.ctx.translate(-this.state.scale, 0);
-          break;
-        case keyMap.byKey.down: // down key pressed
-          this.ctx.translate(0, -this.state.scale);
-          break;
+  /**
+   * Returns the point on the canvas that the event fired from
+   * @param {MouseEvent} e
+   * @return {mousePoint}
+   */
+  getPoint = e => ({
+    x: e.clientX - this.state.xDiff,
+    y: e.clientY - this.state.yDiff
+  });
+
+  /**
+   * Colors all pixels between the {@link lastPoint} and given event's {@link mousePoint point}. Then, sets the last
+   * point to the event's point.
+   * @param {MouseEvent} e
+   */
+  colorPixel = e => {
+    const currentPoint = this.ctx.transformedPoint(this.getPoint(e));
+    const dist = distanceBetween(lastPoint, currentPoint);
+    const angle = angleBetween(lastPoint, currentPoint);
+    const scale = this.state.scale;
+    const { pixelImage, selectedColorNumber, colorStore } = this.props;
+    for (let i = 0; i <= dist; i += scale - 1) {
+      const x = lastPoint.x + Math.sin(angle) * i;
+      const y = lastPoint.y + Math.cos(angle) * i;
+      const pixelX = Math.floor(x / scale);
+      const pixelY = Math.floor(y / scale);
+      const pixel = pixelImage.getPixelByImagePosition(pixelX, pixelY);
+      if (pixel) {
+        if (selectedColorNumber === pixel.color.number) {
+          if (!pixel.filled) {
+            pixel.fill();
+            this.props.colorPixel(pixel);
+          }
+        } else {
+          pixel.shade = colorStore.get(selectedColorNumber);
+        }
       }
-      renderPixelImage(this.props.pixelImage, this.state.scale, this.ctx);
     }
+    lastPoint = currentPoint;
   };
 
-  componentDidMount() {
+  setupCanvas = () => {
     this.ctx = this.refs.canvas.getContext("2d");
 
     this.ctx.imageSmoothingEnabled = false;
     this.ctx.mozImageSmoothingEnabled = false;
     this.ctx.webkitImageSmoothingEnabled = false;
     this.ctx.msImageSmoothingEnabled = false;
-    this.ctx.textAlign = "center";
-    this.ctx.textBaseline = "middle";
 
     initCanvas(this.ctx);
 
     window.addEventListener("keydown", this.handleButtons);
+    this.refs.canvas.addEventListener("mousewheel", this.handleWheel);
+    window.addEventListener("resize", this.optimizedResize);
     const rect = this.refs.canvas.getBoundingClientRect();
 
     this.setState({
       xDiff: rect.left,
       yDiff: rect.top,
     });
-  }
 
-  componentWillUnmount() {
-    window.removeEventListener("keydown", this.handleButtons);
-  }
+    requestAnimationFrame(this.animate);
+  };
 
-  colorPixel(e) {
-    const x = e.clientX - this.state.xDiff;
-    const y = e.clientY - this.state.yDiff;
-    const pt = this.ctx.transformedPoint(x, y);
-    const pixelX = Math.floor(pt.x / this.state.scale);
-    const pixelY = Math.floor(pt.y / this.state.scale);
-    const pixel = this.props.pixelImage.getPixelByPosition(pixelX, pixelY);
-    if (pixel) {
-      if (this.props.selectedColorNumber === pixel.color.number) {
-        if (!pixel.filled) {
-          pixel.fill();
-          this.props.colorPixel(pixel);
-          this.setState((prevState) => ({
-            filledPixels: prevState.filledPixels + 1
-          }));
-        }
-      } else {
-        pixel.shade = this.props.colorStore.get(this.props.selectedColorNumber);
-        this.setState((prevState) => ({
-          shadedPixels: prevState.shadedPixels + 1
-        }));
-      }
-    }
+  animate = () => {
+    renderPixelImage(this.props.pixelImage, this.state.scale, this.ctx);
+    requestAnimationFrame(this.animate);
+  };
+
+  componentDidMount() {
+    this.setupCanvas();
   }
 
   componentDidUpdate(prevProps, prevState, prevContext) {
@@ -176,37 +200,34 @@ class Viewer extends Component {
       const pixelImage = this.props.pixelImage;
       this.props.setColors(colorStore.colors);
 
-      this.width = (window.innerWidth - 60) / 2;
-      this.height = (window.innerHeight - 40);
+      this.width = window.innerWidth - 30 - 15 * getEmPixels();
+      this.height = window.innerHeight - 30;
 
-      const scale = Math.min(this.width / pixelImage.width, this.height / pixelImage.height);
-      this.ctx.font = scale / 2 + "px sans-serif";
+      const scale = Math.round(Math.min(this.width / pixelImage.width, this.height / pixelImage.height));
       if (this.state.scale !== scale) {
         this.setState({ scale });
       }
-      requestAnimationFrame(() => {
-        pixelImage.setScale(scale);
-        renderPixelImage(pixelImage, scale, this.ctx);
-      });
+      this.controller = controller(this);
+      pixelImage.setScale(scale);
     }
   }
 
+  componentWillUnmount() {
+    window.removeEventListener("keydown", this.handleButtons);
+    this.refs.canvas.removeEventListener("mousewheel", this.handleWheel);
+    window.removeEventListener("resize", this.handleResize);
+  }
+
   render() {
-    if (this.ctx && this.props.pixelImage) {
-      requestAnimationFrame(() => {
-        renderPixelImage(this.props.pixelImage, this.state.scale, this.ctx);
-      });
-    }
     return <div>
       <canvas
         ref="canvas"
-        width={window.innerWidth}
-        height={window.innerHeight}
-        // onMouseMove={ this.handleZoom }
+        width={window.innerWidth - 30 - 15 * getEmPixels()}
+        height={window.innerHeight - 30}
         onMouseDown={this.handleMousedown}
         onMouseUp={this.handleMouseup}
-        onMouseLeave={this.handleMouseup}
-        onWheel={this.handleWheel}
+        onMouseLeave={this.handleMouseLeave}
+        onMouseEnter={this.handleMouseEnter}
         style={{ cursor: "crosshair" }}
       />
     </div>;
@@ -219,4 +240,4 @@ const mapStateToProps = (state, props) => ({
   colorStore
 });
 
-export default connect(mapStateToProps, { colorPixel, setColors })(Viewer);
+export default connect(mapStateToProps, { colorPixel, setColors, colorSelected })(Viewer);

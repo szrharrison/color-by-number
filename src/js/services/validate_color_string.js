@@ -1,4 +1,4 @@
-import cssNamedColors from "./css_named_colors";
+import cssNamedColors from "./references/css_named_colors";
 
 const validateColorString = (colorString) => {
   if (typeof colorString !== "string") {

@@ -1,5 +1,6 @@
 import React from "react";
 import { connect } from "react-redux";
+import PropTypes from "prop-types";
 import { Icon, Label } from "semantic-ui-react";
 import addImageDataUrl from "../services/events/add_image_data_url";
 import addImageName from "../services/events/add_image_name";
@@ -29,9 +30,15 @@ function ImageUploader(props) {
   </Label>;
 }
 
+ImageUploader.propTypes = {
+  clearColor: PropTypes.arrayOf(PropTypes.number).isRequired,
+  name: PropTypes.string,
+  pixelsPerImagePixel: PropTypes.number.isRequired
+};
+
 ImageUploader.defaultProps = {
-  pixelsPerImagePixel: 1,
-  clearColor: [255, 255, 255, 255]
+  clearColor: [255, 255, 255, 255],
+  pixelsPerImagePixel: 1
 };
 
 const mapStateToProps = (state, props) => ({

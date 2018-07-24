@@ -1,5 +1,5 @@
-import RGBA from "../rgba";
-import PixelImage from "../pixel_image";
+import RGBA from "../models/rgba";
+import PixelImage from "../models/pixel_image";
 
 const rainbowHeart = new PixelImage(15, 16);
 

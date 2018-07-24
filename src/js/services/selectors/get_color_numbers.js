@@ -1,10 +1,10 @@
 import { createSelector } from "reselect";
-import _ from "lodash"
+import _ from "lodash";
 import getColorInfo from "./get_color_info";
 
 const getColorNumbers = createSelector([
   getColorInfo
-],(colorInfo) => {
+], colorInfo => {
   return _.map(colorInfo, "number");
 });
 

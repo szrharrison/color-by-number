@@ -4,7 +4,7 @@ import { Segment } from "semantic-ui-react";
 import Viewer from "./viewer";
 import OptionsMenu from "./options_menu";
 
-function Main(props) {
+function Main() {
   return <div>
     <Segment basic inverted attached>
       <Viewer/>

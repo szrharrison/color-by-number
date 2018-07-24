@@ -3,9 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "ajv": "^6.1.1",
     "lodash": "latest",
-    "pixi.js": "^4.7.0",
+    "npm": "^6.1.0",
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
     "react-redux": "^5.0.7",
@@ -23,8 +22,9 @@
     "eject": "react-scripts eject"
   },
   "devDependencies": {
+    "prop-types": "latest",
     "react-app-rewire-eslint": "^0.2.3",
     "react-app-rewired": "^1.4.1",
-    "prop-types": "latest"
+    "redux-devtools-extension": "^2.13.2"
   }
 }

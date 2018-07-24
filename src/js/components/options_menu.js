@@ -1,13 +1,14 @@
 import React from "react";
 import { connect } from "react-redux";
+import PropTypes from "prop-types";
 import { Input, Menu } from "semantic-ui-react";
+import colorConverter from "../services/color_converter";
 import ColorPicker from "./color_picker";
+import getClearColor from "../services/selectors/get_clear_color";
+import getPixelsPerImagePixel from "../services/selectors/get_pixels_per_image_pixel";
 import ImageUploader from "./image_uploader";
 import setClearColor from "../services/events/set_clear_color";
 import setPixelsPerImagePixel from "../services/events/set_pixels_per_image_pixel";
-import colorConverter from "../services/color_converter";
-import getClearColor from "../services/selectors/get_clear_color";
-import getPixelsPerImagePixel from "../services/selectors/get_pixels_per_image_pixel";
 
 function OptionsMenu(props) {
   function handlePixelPerImagePixelChange(e) {
@@ -18,14 +19,11 @@ function OptionsMenu(props) {
   function handleClearColorChange(e) {
     const clearColor = e.target.value;
     const colorAsArray = colorConverter.fromString(clearColor);
-    if (colorAsArray) {
-      props.setClearColor(colorAsArray);
-    } else {
-      props.setClearColor("error");
-    }
+    props.setClearColor(colorAsArray);
   }
 
   return <Menu
+    className="OptionsMenu"
     fixed="right"
     inverted
     secondary
@@ -47,17 +45,22 @@ function OptionsMenu(props) {
         placeholder="Clear Color"
         error={props.clearColor === "error"}
         onChange={handleClearColorChange}
+        value={colorConverter.fromArray(props.clearColor)}
         transparent
         type="text"
       />
     </Menu.Item>
-    <Menu.Item name="home">
+    <Menu.Item>
       <ImageUploader/>
     </Menu.Item>
-
     <ColorPicker/>
   </Menu>;
 }
+
+OptionsMenu.propTypes = {
+  clearColor: PropTypes.oneOfType([PropTypes.string, PropTypes.array]),
+  pixelsPerImagePixel: PropTypes.number.isRequired
+};
 
 const mapStateToProps = (state, props) => ({
   clearColor: getClearColor(state, props),
